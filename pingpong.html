@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Spelprogrammering JavaScript</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <script src="http://spelprogrammering.nu/simple.js">
+
+    /* deklarera variabler */
+    var spelare1poäng = 0;
+    var spelare2poäng = 0;
+
+    function wait(ms){
+       var start = new Date().getTime();
+       var end = start;
+       while(end < start + ms) {
+         end = new Date().getTime();
+      }
+    }
+
+    function start()
+    {
+      updatesPerSecond = 600;
+      frame_delay = 10; //ms
+
+      /* racket */
+      /* grundinställningar för: */
+      /* hastighet, bredd, höjd, avstånd till vägg */
+      paddles = {
+                  speed: 7,
+                  width: 30,
+                  height: 120,
+                  distanceToWall: 40
+               };
+
+      //hideMouse();
+
+      /* spelare till vänster */
+      /* x = rackets avstånd till vänster vägg,
+      racket ska ritas lodrätt i mitten
+      y = fönstrets totalhöjd delat med två,
+      totalhöjd, rackhöjd,  */
+      mouse_target_y = 0;
+      mouse_target_y_reached = 1;
+
+      p1 = {
+              x: paddles.distanceToWall,
+              y: totalHeight/2 - paddles.height/2,
+              momentum_vertical: 0,
+              angle: 0
+            };
+
+      /* spelare till höger */
+      /* bestäm vart racket ska ritas */
+      /* totalWidth är fönstrets bredd */
+      /* totalbredd, avstånd till vägg, rackets bredd */
+      /* kopiera vertikala värdet från racket p1 */
+      //p2 = {momentum_vertical: 0};
+
+      p2 = {
+            x: totalWidth - paddles.distanceToWall - paddles.width,
+            y: p1.y
+          };
+
+      mitt = {
+            x: totalWidth/2 - 10,
+            y: 1
+          };
+      /* bollen */
+      /* bestäm
+      · vart bollen ska ritas
+      · bollens storlek
+      · bollens hastighet vid start */
+
+      /*b = {x: totalWidth/2 - 10,
+           y: totalHeight/2 - 10,
+           size: 20,
+           xSpeed: 10,
+           ySpeed: random(12) - 6};*/
+
+      b = {
+            x: totalWidth/2,
+            y: totalHeight/2 - 10,
+            size: 15,
+            xSpeed: 10,
+            ySpeed: 0
+          };
+    }
+
+    function update()
+    {
+      /* fyll bakgrunden med svart */
+      fill("#363");
+
+      /* rita mittlinje */
+      rectangle(mitt.x, mitt.y, 20, 800, "#CCC");
+
+      /* rita spelare två racket */
+      rectangle(p2.x, p2.y, paddles.width, paddles.height, "#C00");
+
+      /* rita bollen */
+      //rectangle(b.x, b.y, b.size, b.size, "white");
+      circle(b.x, b.y, b.size, "white");
+
+      /* kontroller för spelare 1 */
+      p1.y = p1.y + p1.momentum_vertical;
+
+      if (mouse.left) {
+        mouse_target_y = mouse.y;
+      }
+      if (keyboard.w)    {
+        p1.momentum_vertical -= 0.7;
+        p1.angle = -2;
+        /* om p1.y är mindre än noll så ska
+        p1 vara 0 */
+        if (p1.y < 0) {
+          p1.y = 0;
+          p1.momentum_vertical = 0;
+        }
+      }
+      else if (keyboard.s)    {
+        p1.momentum_vertical += 0.7;
+        p1.angle = +2;
+        /* om p1.y plus paddles.height är mer än totalhight så ska
+        den vara på totalheight minus paddles.height */
+        if (p1.y + paddles.height > totalHeight){
+          p1.y = totalHeight - paddles.height;
+          p1.momentum_vertical = 0;
+        }
+      }
+      else
+      {
+        p1.momentum_vertical *= 0.7;
+        //p1.angle = 0;
+      }
+
+      /* stödja musrörelser också */
+      if (mouse_target_y_reached == 0) {
+        p1.y = mouse_target_y;
+        mouse_target_y_reached = 1;
+      }
+      if ( mouse.right ){
+        p1.angle = 0;
+      }
+      if (mouse.left) {
+        if ( mouse_target_y > p1.y + 10 ){
+          //p1.angle = +2;
+          p1.angle = (p1.y-mouse_target_y)*0.01*-1;
+        }
+        if ( mouse_target_y < p1.y - 10 ){
+          //p1.angle = -2;
+          p1.angle = (p1.y-mouse_target_y)*0.01*-1;
+        }
+        mouse_target_y = mouse.y;
+        mouse_target_y_reached = 0;
+      }
+
+      /* rita spelare ett racket */
+      save();
+      translate(p1.x, p1.y);
+      rotate(p1.angle);
+      rectangle(0, 0, paddles.width, paddles.height, "#C00");
+      restore();
+
+      /* kontroller för spelare 2 */
+      if (keyboard.up)   { p2.y -= paddles.speed; }
+      if (keyboard.down) { p2.y += paddles.speed; }
+
+      /* kontroller för spelare 1 */
+      /* om någon trycker a och p1.x > 0 så ska
+      rackets x minska med paddles.speed */
+      if (keyboard.a && p1.x > 0)    { p1.x -= paddles.speed; }
+      if (keyboard.d && p1.x < totalWidth/2 - 20)    { p1.x += paddles.speed; }
+
+      /* kontroller för spelare 2 */
+      if (keyboard.left && p2.x > totalWidth/2 ) { p2.x -= paddles.speed; }
+      if (keyboard.right) { p2.x += paddles.speed; }
+
+      /* bollens hastighet ökar under spelets gång */
+      b.x += b.xSpeed;
+      b.y += b.ySpeed;
+      /*Gör datorn sämre */
+      if (b.y > p2.y + 10)
+      {
+          p2.y += paddles.speed + random(3)-2;
+
+      }
+      if (b.y < p2.y - 10)
+      {
+          p2.y -= paddles.speed + random(3)-2;
+      }
+
+
+
+      /* studsa bollen på övre och undre väggar*/
+
+      /* om b.y mindre än noll */
+      /* eller */
+      /* om bollens vertikala position är högre än maxhöjd minus bollens storlek */
+      /* då ska bollens vertikala hastighet multipliceras med minus ett */
+      if (b.y < 0 || b.y > totalHeight - b.size) { b.ySpeed = -b.ySpeed; }
+
+
+
+      /* studsa bollen på racket p1 */
+
+      /* om bollens horisontella position är större än spelare ett horisonetella position
+      och bollens vertikala position är större än spelare ett vertikala position minus bollens storlek och */
+      if ((b.x <= (p1.x + paddles.width) &&
+          b.x > p1.x + b.xSpeed &&
+
+      /* bollens vertikala position är mindre än spelare etts vertikala position plus rackets höjd och
+      bollens horisontella position är mindre än spelare etts avstånd till väggen plus rackets bredd */
+           b.y < p1.y + paddles.height
+           && b.y > p1.y - b.size))
+
+          {
+
+        b.xSpeed = -b.xSpeed - b.xSpeed / abs(b.xSpeed);
+        if (keyboard.d) { b.xSpeed += paddles.speed*(random(3)); }
+        if (keyboard.a) { b.xSpeed = b.xSpeed/2 }
+        /*b.xSpeed = -b.xSpeed - 1;*/
+
+          /* ändra bollens vertikala hastighet slumpmässigt */
+        //b.ySpeed = -b.ySpeed + random(8) - 4;
+          /* enligt p1 rotation */
+          b.ySpeed = p1.angle*4;
+
+
+          }
+
+
+
+
+      /* studsa bollen på racket p2 */
+
+          /* bollens horisontella position är mindre än
+          spelare två horisontella position
+          och bollens vertikala position är större än
+          spelare två vertikala position
+          minus bollens storlek
+          och
+          */
+           if ((b.x >= p2.x && b.x < p2.x + b.xSpeed + paddles.width &&
+           b.y > p2.y - b.size &&
+
+          /* bollens vertikala position är mindre än
+          spelare två vertikala position
+          plus rackets höjd
+          och
+          bollens horisontella position är större än
+          spelare två horisontella position
+          minus bollens storlek */
+           b.y < p2.y + paddles.height ))
+
+
+      {
+          /* studsa bollen */
+
+
+          /* tilldela följande värde till bollens horisontella fart
+          multiplicera det värdet med -1 (studsar horisontellt)
+          minus (
+          bollens horisontella hastighet delat med dessa absoluta horisontella hastighet (?)
+          )
+          */
+        b.xSpeed = -b.xSpeed - b.xSpeed / abs(b.xSpeed);
+        /*b.xSpeed = -b.xSpeed - 1;*/
+        if (keyboard.left) { b.xSpeed -= paddles.speed; }
+        if (keyboard.right) { b.xSpeed = b.xSpeed = b.xSpeed/2}
+          /* ändra bollens vertikala hastighet slumpmässigt */
+        b.ySpeed = -b.ySpeed + random(8) - 4;
+
+      }
+
+
+      /* räkna poäng
+      om
+      bollens horisontella position är mindre än 0 minus bollens storlek
+      eller
+      bollens horisontella position
+      är större än eller lika med totalbredd för fönstret
+      så ska spelet starta om */
+
+      if (b.x < (0+b.xSpeed)-b.size) { spelare2poäng++; start(); }
+      if (b.x > (totalWidth+b.xSpeed)) { spelare1poäng++; start(); }
+
+      if ( spelare1poäng > 9 ) { if (confirm("Player 1 won! Play again?"))
+        { location.reload(); }}
+      else if ( spelare2poäng > 9 ) { if (confirm("Player 2 won! Play again?"))
+        { location.reload(); }
+      else
+        { stopUpdate(); }
+      }
+
+      /* skriv poäng */
+      text(50, 50, 40, spelare1poäng, "white");
+      text(totalWidth-90, 50, 40, spelare2poäng, "white");
+      //text(190, 50, 40, mouse_target_y, "white");
+      //text(390, 50, 40, p1.angle, "white");
+
+
+      /* vänta för att kontrollera uppspelningen med tid utan ryck */
+      //console.log('before');
+      wait(frame_delay);  //7 seconds in milliseconds
+      //console.log('after');
+
+
+    }
+
+    </script>
+</head>
+
+<body>
+    2.5 Pong plus
+    <p></p>
+
+</body>
+
+</html>
